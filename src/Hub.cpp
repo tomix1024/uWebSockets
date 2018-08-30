@@ -172,9 +172,14 @@ bool parseURI(std::string &uri, bool &secure, std::string &hostname, int &port, 
         offset++;
         std::string portStr = uri.substr(offset, uri.find('/', offset) - offset);
         if (portStr.length()) {
-            try {
-                port = stoi(portStr);
-            } catch (...) {
+            struct SaveErrno {
+                SaveErrno() : savedErrno(errno) { errno = 0; }
+                ~SaveErrno() { errno = savedErrno; }
+                int savedErrno;
+            } saveErrno;
+            char *endPtr;
+            port = strtol(portStr.c_str(), &endPtr, 10);
+            if (portStr.c_str() == endPtr || errno != 0) {
                 return false;
             }
         } else {
